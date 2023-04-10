@@ -1,32 +1,40 @@
 import pdfplumber
-from pdfminer.converter import XMLConverter
+from collections import namedtuple
 import re
 
 doc1_path = "./Files/esccrpqpl005iss235.pdf"
-change_descriptions = ["extension", "extension with new Remark", "extension with re-scope", "editorial", "removal"]
+change_descriptions = ["Extension", "Extension with new Remark",
+                       "Extension with re-scope", "Editorial", "Removal", "Revision"]
 change_descriptions_dictionary = {}
-change_notice_page = 3
+change_notice_pages = 3
+
+data_re = re.compile(
+    r'(\d{3}[a-zA-Z])([rev]{3}\d)?,\s(\d{3}[a-zA-Z])?([rev]{3}\d)?([a-zA-Z!@#$&()\\-`+,\’ ]+)\(([a-zA-Z]+)\)')
+
+data_re2 = re.compile(
+    r'((\d{3}[a-zA-Z])([rev]{3}\d)?,\s)*([a-zA-Z!@#$&()\\-`+\’ ]+)\(([a-zA-Z]+)\)')
 
 
 def get_content(doc_1, doc_page):
     doc1_reader = pdfplumber.open(doc_1)
-    change_notice_page_content = doc1_reader.pages[doc_page - 1].extract_table()
+    change_notice_page_content = doc1_reader.pages[doc_page -
+                                                   1].extract_table()
     content = change_notice_page_content[1][1]
-
-
 
     for line in content.split('\n'):
         for description in change_descriptions:
-            if(description == line.lower().replace(":", "")):
+            if (line.lower().replace(":", "").startswith(description.lower())):
                 current_desc = description
-                print("---")
-        if(current_desc):
-            change_descriptions_dictionary[current_desc] = line 
-    
-    print(change_descriptions_dictionary)
-        
-        
+                if not current_desc in change_descriptions_dictionary:
+                    change_descriptions_dictionary[current_desc] = ""
+        if (current_desc):
+            change_descriptions_dictionary[current_desc] += "_" + line
+
+    # print(data_re.findall(
+    #     change_descriptions_dictionary["Extension"]))
+
+    print(data_re.findall(
+        "301Frev2, 300Drev3, Souriau (France)_365Arev2, Axon’ Cable (France)"))
 
 
-
-get_content(doc1_path, change_notice_page)
+get_content(doc1_path, change_notice_pages)
